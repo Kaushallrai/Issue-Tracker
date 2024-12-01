@@ -1,5 +1,6 @@
 "use client";
-import { Button, Callout, Text, TextField } from "@radix-ui/themes";
+
+import { Button, Callout, TextField } from "@radix-ui/themes";
 import { useForm, Controller } from "react-hook-form";
 import SimpleMDE from "react-simplemde-editor";
 import "easymde/dist/easymde.min.css";
@@ -17,6 +18,7 @@ type IssueForm = z.infer<typeof validationSchemas>;
 
 const NewIssuePage = () => {
   const router = useRouter();
+
   const {
     register,
     control,
@@ -25,8 +27,21 @@ const NewIssuePage = () => {
   } = useForm<IssueForm>({
     resolver: zodResolver(validationSchemas),
   });
+
   const [error, setError] = useState("");
   const [isSubmitting, setSubmitting] = useState(false);
+
+  const onSubmit = handleSubmit(async (data) => {
+    try {
+      setSubmitting(true);
+      await axios.post("/api/issues", data);
+      router.push("/issues");
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (error) {
+      setSubmitting(false);
+      setError("Unexpected error occurred");
+    }
+  });
 
   return (
     <div className="max-w-xl p-5 space-y-3">
@@ -38,24 +53,11 @@ const NewIssuePage = () => {
           <Callout.Text>{error}</Callout.Text>
         </Callout.Root>
       )}
-      <form
-        className="space-y-3 "
-        onSubmit={handleSubmit(async (data) => {
-          try {
-            setSubmitting(true);
-            await axios.post("/api/issues", data);
-            router.push("/issues");
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          } catch (error) {
-            setSubmitting(false);
-            setError("Unexpected error occurred ");
-          }
-        })}
-      >
+
+      <form className="space-y-3" onSubmit={onSubmit}>
         <TextField.Root placeholder="Title" {...register("title")}>
           <TextField.Slot></TextField.Slot>
         </TextField.Root>
-
         <ErrorMessage>{errors.title?.message}</ErrorMessage>
 
         <Controller
@@ -66,6 +68,7 @@ const NewIssuePage = () => {
           )}
         />
         <ErrorMessage>{errors.description?.message}</ErrorMessage>
+
         <Button disabled={isSubmitting}>
           Submit New Issue
           {isSubmitting && <Spinner />}
